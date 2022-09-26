@@ -189,3 +189,67 @@ G3:=REF(COUNT(涨停价=C,10)>=2,1);{此参数可根据习惯调整}
 打菜比XL旺1:去停ST1 AND 昨涨停=1 AND G2=0  AND 开幅>3 AND 开换手Z>0.6   AND RANGE(开换比,10,10000);
 
 打菜比XL旺:=去停ST1 AND 昨涨停=1 AND G2=0 AND G3=0  AND 开幅>3 AND 开换手Z>0.6  AND 前换手Z>2  AND RANGE(开换比,10,10000);
+
+====================================================================================================================================================================
+
+{通达信去掉*、S、ST}
+S1:=IF(NAMELIKE('S'),0,1);
+S2:=IF(NAMELIKE('*'),0,1);
+S3:=DYNAINFO(17)>0;
+S4:=IF(INBLOCK('科创板'),0,1);
+S5:=IF(NAMELIKE('C'),0,1);
+S6:=IF(INBLOCK('创业板'),0,1);
+S7:=IF(INBLOCK('创业板'),1,0);
+S8:=IF(CODELIKE('301'),1,0);
+S9:=IF(CODELIKE('301'),0,1);
+S10:=IF(NAMELIKE('C'),1,0);
+S11:=IF(CODELIKE('83'),0,1);
+S12:=IF(CODELIKE('43'),0,1);
+S13:=IF(CODELIKE('87'),0,1);
+
+去停ST1:=S1 AND S2 AND S3 AND S4 AND S5 AND S6 AND S11 AND S12 AND S13;
+
+涨幅:=100*(C-REF(C,1))/REF(C,1);
+开幅:=100*(O-REF(C,1))/REF(C,1);
+跌幅:=100*(L-REF(C,1))/REF(C,1);
+高幅:=100*(H-REF(C,1))/REF(C,1);
+昨开幅:=REF((OPEN-REF(CLOSE,1))/REF(CLOSE,1)*100,1);
+
+换手Z:=IF(FINANCE(46)>1,VOL/FINANCE(46)*10000,VOL/10000);
+
+开换手Z:=DYNAINFO(15)/OPEN/FINANCE(46)*100;
+昨换手Z:=REF(V*10000/FINANCE(46),1);
+开换比:=开换手Z/昨换手Z*100;
+
+板块:=IF(INBLOCK('科创板'),0.2,IF(INBLOCK('创业板'),0.2,IF(INBLOCK('ST板块'),0.05,0.1)));
+涨停价:=IF(板块=0.2,ZTPRICE(REF(C,1),0.2),IF(NAMELIKE('S') OR NAMELIKE('*'),ZTPRICE(REF(C,1),0.05),ZTPRICE(REF(C,1),0.1)));
+跌停价:=IF(板块=0.2,DTPRICE(REF(C,1),0.2),IF(NAMELIKE('S') OR NAMELIKE('*'),DTPRICE(REF(C,1),0.05),DTPRICE(REF(C,1),0.1)));
+去开板:=NOT(OPEN=涨停价);{NOT(OPEN=涨停价)};
+涨停:=涨停价=C;
+跌停:=跌停价=C;
+昨涨停:=REF(涨停,1);
+昨跌停:=REF(跌停,1);
+
+G1:=REF(涨停价=O AND 涨停价=C AND L<C,1);
+G2:=REF(COUNT(涨停价=C,2)>=2,1);
+G3:=REF(COUNT(高幅>8,5)>=1,1);
+G4:=REF(COUNT(涨停价=C,5)>=1,1);
+G5:=REF(COUNT(涨停价=C,10)>=1,1);{参数可自调10，20，50，100等等}
+
+主板盘1:=去停ST1 AND 昨涨停=0 AND G3=1 AND RANGE(昨换手Z,10,40) AND RANGE(开换比,0.6,100) AND 涨幅>6;  
+
+主板盘2:=去停ST1 AND 昨涨停=0 AND G3=1 AND RANGE(昨换手Z,10,40) AND RANGE(开换比,0.6,100)AND 高幅>6;
+
+
+主板盘3:=去停ST1 AND 昨涨停=0 AND G4=1 AND RANGE(昨换手Z,2,10) AND RANGE(开换比,0.6,100) AND 涨幅>6;  
+
+主板盘4:=去停ST1 AND 昨涨停=0 AND G4=1 AND RANGE(昨换手Z,2,10) AND RANGE(开换比,0.6,100)AND 高幅>6;
+
+{取两个基础样，其他条件根据自身习惯自行添加即可达到N有涨停头板装币结果，参数自调，没卵用的东西玩玩图个乐呵还是可以的哈}
+
+系统时间:=MACHINETIME;
+时分判断:=系统时间>=00000 AND 系统时间<=240000;
+
+综合预警:主板盘1 OR 主板盘3 OR((主板盘2 OR 主板盘4 )AND 时分判断);
+
+{自己去拆分}
